@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Eclaire shop (Next.js)
 
-## Getting Started
+Part 2 of the Zealand "Lemonade Stand" assignment. The eclair shop from Part 1 (React + Vite) rebuilt with Next.js and the App Router.
 
-First, run the development server:
+**Live demo:** https://eclaire-next-5nua.vercel.app/
+**Part 1 (React):** https://github.com/katerynamois/redux-cake-cart
+
+## Features
+
+- **Home:** shows the current profit. "Sell Éclair" adds $5 and "Buy Ingredients" subtracts $2.
+- **Shop:** eclairs are fetched on the server from my MockAPI and shown with name, image, description and price.
+- **Product page:** click an eclair to open `/shop/[id]` with details and "Add to Cart".
+- **Cart:** change quantities with **+** and **−**, see totals, or clear the cart.
+- **Checkout:** order summary. "Place Order" sends the order to my own API route `/api/order`. "Clear Order" empties the cart.
+
+## Tech
+
+- [Next.js](https://nextjs.org/) 16 with the App Router
+- [Redux Toolkit](https://redux-toolkit.js.org/): `cartSlice` and `profitSlice` (reused from Part 1)
+- [Bootstrap](https://getbootstrap.com/) + custom CSS (reused from Part 1)
+- API: [MockAPI](https://mockapi.io/) `https://6abe4f88c4d5ac54830261cc.mockapi.io/eclairs`
+- Deployment: [Vercel](https://vercel.com/), CI: GitHub Actions
+
+## Install and run
+
+You need [Node.js](https://nodejs.org/) 20.9 or newer.
 
 ```bash
+git clone https://github.com/katerynamois/eclaire-next.git
+cd eclaire-next
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Starts the development server |
+| `npm run build` | Builds the app for production |
+| `npm run start` | Runs the production build |
+| `npm run lint` | Checks the code with ESLint |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+app/
+├── layout.js              # Shared layout: StoreProvider + Navbar
+├── page.js                # Home  → /
+├── shop/
+│   ├── page.js            # Shop  → /shop (fetches data on the server)
+│   └── [id]/page.js       # Product details → /shop/1, /shop/2 ...
+├── cart/page.js           # Cart  → /cart
+├── checkout/page.js       # Checkout → /checkout
+└── api/order/route.js     # POST /api/order (Route Handler)
+components/
+├── StoreProvider.jsx      # Redux Provider (client)
+├── Navbar.jsx             # Links + cart count (client)
+├── ProfitCard.jsx         # Profit buttons (client)
+├── AddToCartButton.jsx    # Add to cart button (client)
+├── Cart.jsx               # Cart with + / − (client)
+└── Checkout.jsx           # Order summary + Place Order (client)
+redux/
+├── store.js
+├── cartSlice.js
+└── profitSlice.js
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Server and Client Components
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+All pages in `app/` are **Server Components**. Only the parts that need state or clicks are **Client Components** (`"use client"`): `StoreProvider`, `Navbar`, `ProfitCard`, `AddToCartButton`, `Cart` and `Checkout`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Rendering strategy
 
-## Deploy on Vercel
+`/shop` uses `fetch(..., { next: { revalidate: 60 } })`. The page is cached and served as static HTML, and Next.js fetches fresh data at most once a minute. Products rarely change, so the page is fast, but a new éclair in MockAPI still shows up without a new deploy.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`/shop/[id]` is rendered on demand, because the product ids are not known at build time.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API route
+
+`POST /api/order` receives the cart from Checkout, rejects an empty order (400), calculates the total on the server and returns an order number (201).
+
+## CI/CD
+
+- **CI:** `.github/workflows/ci.yml` runs `npm ci`, `npm run lint` and `npm run build` on every push and pull request to `main`.
+- **CD:** Vercel is connected to the GitHub repo and deploys automatically on every push to `main`.
