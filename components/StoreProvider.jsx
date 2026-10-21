@@ -6,5 +6,5 @@ import {makeStore} from "@/redux/store";
 
 export default function StoreProvider({children}){
     const [store] = useState(makeStore);
-    return <Provider store={store}>{children} </Provider>;
+    return <Provider store={store}>{children}</Provider>;
 }
