@@ -10,12 +10,25 @@ const Checkout = () => {
   const router = useRouter();
   const cart = useSelector(state => state.cart);
 
-  const handleCheckout = () => {
+    const handleCheckout = async () => {
+    const res = await fetch("/api/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: cart.cakes }),
+    });
+
+    if (!res.ok) {
+      alert("Something went wrong. Please try again.");
+      return;
+    }
+
+    const data = await res.json();
+    alert(`${data.message} Order #${data.orderId}, total ${data.total} kr.`);
     dispatch(clearCart());
     router.push("/");
   };
 
-  if (cart.cakes.length === 0) {
+    if (cart.cakes.length === 0) {
     return (
       <div className="card cart">
         <div className="card-header">
@@ -28,6 +41,7 @@ const Checkout = () => {
       </div>
     );
   }
+
 
   return (
     <div className="card cart">
